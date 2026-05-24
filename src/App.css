@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f2f7;
+    --surface: #ffffff;
+    --border: #e4e8f0;
+    --primary: #0052cc;
+    --primary-light: #e8f0fe;
+    --accent: #00b4d8;
+    --text-primary: #0d1b2a;
+    --text-secondary: #5a6a7e;
+    --text-muted: #9aa5b4;
+    --nav-bg: #0d1b2a;
+    --font: 'DM Sans', sans-serif;
+    --transition: 0.18s cubic-bezier(.4,0,.2,1);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+  }
+
+  html, body, #root { height: 100%; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button {
+    font-family: var(--font);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  a { text-decoration: none; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
