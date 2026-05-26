@@ -456,7 +456,8 @@ const ODATA_BASE = '/sap/opu/odata/shiv/MO_SUPP_PORTAL_ASN_APP_SRV'
 // helper — GET JSON from an OData path
 async function odataGet(path) {
   const res = await fetch(`${ODATA_BASE}${path}`, {
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', Loginid: "manishgupta8@kpmg.com",
+        Logintype: "E", },
   })
   if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`)
   return res.json()
