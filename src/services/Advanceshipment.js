@@ -8,8 +8,7 @@ const ODATA_BASE = '/sap/opu/odata/shiv/MO_SUPP_PORTAL_ASN_APP_SRV'
 // ── base GET helper ──
 async function odataGet(path) {
   const res = await fetch(`${ODATA_BASE}${path}`, {
-    headers: { Accept: 'application/json', Loginid: "manishgupta8@kpmg.com",
-        Logintype: "E", },
+    headers: { Accept: 'application/json' },
   })
   if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`)
   return res.json()
@@ -100,16 +99,17 @@ function mapItem(d) {
 
 function mapAttachment(d) {
   const name = str(d.Filename)
-  const mime = str(d.Mimetype).toLowerCase()
-  // SAP GOS stores base64 content in FileContent or Content field
-  const content = str(d.FileContent || d.Content || '')
+  const mime = str(d.Mimetype) || str(d.__metadata?.content_type) || 'application/octet-stream'
+  // SAP streams binary via media_src — this is the $value URL
+  const mediaSrc = d.__metadata?.media_src || null
   return {
     name,
-    type: mime.includes('pdf') ? 'PDF' : 'FILE',
-    mime: mime || 'application/octet-stream',
-    content, // base64 string — may be empty if SAP streams separately
-    // URL-based download fallback (SAP GOS value help pattern)
-    downloadUrl: d.Url ? str(d.Url) : null,
+    type: mime.toLowerCase().includes('pdf') ? 'PDF' : 'FILE',
+    mime,
+    mediaSrc,  // ← direct $value stream URL from SAP
+    // composite key fields for re-fetching if needed
+    sernr: str(d.Sernr),
+    dokvr: str(d.Dokvr),
   }
 }
 
@@ -165,46 +165,25 @@ export const asnApi = {
 
   // GET /AsnAttachmentSet?$filter=AsnNum eq '...' and FisYear eq '...'&$format=json
   async getAttachments(asnNum, fisYear) {
-  const filter = `AsnNum eq '${asnNum}' and FisYear eq '${fisYear}'`
-  const json = await odataGet(
-    `/AsnAttachmentSet?$filter=${encodeURIComponent(filter)}&$format=json`
-  )
-  // ── TEMP DEBUG ──
-  console.log('RAW attachment response:', JSON.stringify(json.d?.results?.[0], null, 2))
-  // ────────────────
-  return (json.d?.results || []).map(mapAttachment)
-},
+    const filter = `AsnNum eq '${asnNum}' and FisYear eq '${fisYear}'`
+    const json = await odataGet(
+      `/AsnAttachmentSet?$filter=${encodeURIComponent(filter)}&$format=json`
+    )
+    return (json.d?.results || []).map(mapAttachment)
+  },
 
-  
-
-  // Download attachment — tries three strategies in order:
-  //   1. base64 content already in the record (FileContent field)
-  //   2. direct URL from the record (Url field)
-  //   3. fetch raw bytes from OData $value endpoint
+  // Download — fetches binary from SAP media_src ($value endpoint)
+  // Keys: AsnNum, FisYear, Sernr, Dokvr (from __metadata)
   async downloadAttachment(asnNum, fisYear, attachment) {
-    const { name, mime, content, downloadUrl } = attachment
+    const { name, mime, mediaSrc, sernr, dokvr } = attachment
 
-    // Strategy 1 — base64 content in record
-    if (content) {
-      triggerDownload(base64ToBlob(content, mime), name)
-      return
-    }
+    // Build $value URL — use media_src from record if present, else construct from keys
+    const valueUrl = mediaSrc ||
+      `${ODATA_BASE}/AsnAttachmentSet(AsnNum='${asnNum}',FisYear='${fisYear}',Sernr='${sernr}',Dokvr='${dokvr}')/$value`
 
-    // Strategy 2 — pre-signed / GOS URL
-    if (downloadUrl) {
-      const a = document.createElement('a')
-      a.href = downloadUrl
-      a.download = name
-      a.target = '_blank'
-      a.click()
-      return
-    }
-
-    // Strategy 3 — fetch $value from OData
-    // Adjust key fields if SAP uses different keys for AsnAttachmentSet
-    const filter = `AsnNum eq '${asnNum}' and FisYear eq '${fisYear}' and Filename eq '${encodeURIComponent(name)}'`
-    const url = `${ODATA_BASE}/AsnAttachmentSet?$filter=${encodeURIComponent(filter)}&$format=json`
-    const res = await fetch(url, { headers: { Accept: mime || 'application/octet-stream' } })
+    const res = await fetch(valueUrl, {
+      headers: { Accept: mime || 'application/octet-stream' },
+    })
     if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}`)
     const blob = await res.blob()
     triggerDownload(blob, name)
@@ -232,12 +211,6 @@ export const asnApi = {
 // PRIVATE UTILS
 // ═══════════════════════════════════════════════════════════════
 
-function base64ToBlob(base64, mime = 'application/octet-stream') {
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  return new Blob([bytes], { type: mime })
-}
 
 function triggerDownload(blob, filename) {
   const url = URL.createObjectURL(blob)
