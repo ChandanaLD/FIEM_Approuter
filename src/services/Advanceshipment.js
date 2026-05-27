@@ -165,12 +165,17 @@ export const asnApi = {
 
   // GET /AsnAttachmentSet?$filter=AsnNum eq '...' and FisYear eq '...'&$format=json
   async getAttachments(asnNum, fisYear) {
-    const filter = `AsnNum eq '${asnNum}' and FisYear eq '${fisYear}'`
-    const json = await odataGet(
-      `/AsnAttachmentSet?$filter=${encodeURIComponent(filter)}&$format=json`
-    )
-    return (json.d?.results || []).map(mapAttachment)
-  },
+  const filter = `AsnNum eq '${asnNum}' and FisYear eq '${fisYear}'`
+  const json = await odataGet(
+    `/AsnAttachmentSet?$filter=${encodeURIComponent(filter)}&$format=json`
+  )
+  // ── TEMP DEBUG ──
+  console.log('RAW attachment response:', JSON.stringify(json.d?.results?.[0], null, 2))
+  // ────────────────
+  return (json.d?.results || []).map(mapAttachment)
+}
+
+  
 
   // Download attachment — tries three strategies in order:
   //   1. base64 content already in the record (FileContent field)
