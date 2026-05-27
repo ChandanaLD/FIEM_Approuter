@@ -173,7 +173,7 @@ export const asnApi = {
   console.log('RAW attachment response:', JSON.stringify(json.d?.results?.[0], null, 2))
   // ────────────────
   return (json.d?.results || []).map(mapAttachment)
-}
+},
 
   
 
