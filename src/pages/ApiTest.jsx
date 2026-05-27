@@ -19,8 +19,8 @@ export default function ApiTest() {
     fetch(url.trim(), {
       headers: {
         Accept: "application/json",
-        Loginid: "manishgupta8@kpmg.com",
-        Logintype: "E",
+        Loginid: "401122",
+        Logintype: "P",
       },
     })
       .then((res) => {
