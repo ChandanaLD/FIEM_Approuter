@@ -15,6 +15,7 @@ import GoodsMovement from './pages/shipment/GoodsMovement.jsx'
 import GateInGateOut from './pages/shipment/gateingateout.jsx'
 import CreateASN from './pages/purchasing/createASN.jsx'
 import PageLayout from './layouts/PageLayout.jsx'
+import ScheduleLinesPage from './pages/purchasing/Schedulelines.jsx'
 
 // Landing
 import LandingPage from './components/landingpage.jsx'
@@ -57,6 +58,13 @@ export default function App() {
       <Route
         path="/purchasing/schedule-generate"
         element={<ScheduleGenerate />}
+      />
+
+      <Route
+        path="/purchasing/schedule-lines"
+        element={
+            <ScheduleLinesPage />
+        }
       />
 
       {/* Shipment */}
